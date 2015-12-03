@@ -29,8 +29,9 @@ class WifiSerial {
 
   static void Initialize();
   static bool HardReset();
-  static void SendCommand(String cmd, String& output);
   static bool SendCommand(String cmd, String ack, String& output);
+  static void SendCommand(String cmd, String& output);
+  static void WaitAckString(String ack, String& output);
   static void FlushSerialBuffer();
   static void DumpSerialBuffer();
   static bool DoThingSpeakUpdate();

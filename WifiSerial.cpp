@@ -18,26 +18,24 @@ void WifiSerial::Initialize() {
 
   Display::ShowMessage(F("   #IoT ;-)   "), F("Initializing Wifi Serial"));
   do {
-    Serial.println(F("Initializing WiFi Serial..."));
+    Serial.println(F("## Initializing WiFi Serial..."));
   } while (!WifiSerial::HardReset());
   WifiSerial::FlushSerialBuffer();
 
   /* Wait for a positive "AT" test command reponse */
   Display::ShowMessage(F("   #IoT ;-)   "), F("Setting up WiFi..."));
   do {
-    Serial.println(F("Setting up WiFi..."));
+    Serial.println(F("## Setting up WiFi..."));
   }
   while (!WifiSerial::SendCommand(F("AT"), F("OK"), output));
-  Serial.println(output);
 
   /* Set ESP8266's operation mode to station (client) */
   if (SETUP_WLAN) {
-    Serial.println(F("Setting up WLAN..."));
+    Serial.println(F("## Setting up WLAN..."));
     Display::ShowMessage(F("   #IoT ;-)   "), F("Setting up WLAN..."));
     WifiSerial::SendCommand(F("AT+CWMODE=1"), output);
-    Serial.println(output);
+
     WifiSerial::SendCommand(F("AT+RST"), F("System Ready"), output);
-    Serial.println(output);
 
     /* Connect ESP8266 to the wlan network specified in secrets.h */
     WifiSerial::SendCommand(String(F("AT+CWJAP=\"")) +
@@ -45,15 +43,13 @@ void WifiSerial::Initialize() {
                 String(F("\",\"")) +
                 String(S_WLAN_PASSWORD) +
                 String(F("\"")), F("OK"), output);
-    Serial.println(output);
   }
 
   /* Get some debug output (device's IP address) */
   Display::ShowMessage(F("   #IoT ;-)   "), F("Getting connection status..."));
   do {
-    Serial.println(F("Getting connection status..."));
+    Serial.println(F("## Getting connection status..."));
   } while (!WifiSerial::SendCommand(F("AT+CIFSR"), F("OK"), output));
-  Serial.println(output);
 }
 
 /* Reset the device by turning it off and on again via the CH_PD pin.
@@ -82,22 +78,23 @@ bool WifiSerial::HardReset() {
 
 }
 
-/* Send command 'cmd'. Wait until timeout occurs then set 'output' to
-   the data it received . */
-void WifiSerial::SendCommand(String cmd, String& output) {
-  WifiSerial::SendCommand(cmd, F(""), output);
-}
-
 /* Send command 'cmd'. Wait until confirmation message 'ack' is received
-   or until timeout occurs, then set 'output' as the data it received */
+   or until timeout occurs, then set 'output' as the data it received.
+   If 'cmd' is empty string no command is sent. */
 bool WifiSerial::SendCommand(String cmd, String ack, String& output) {
 
+  Serial.print(F("## CMD="));
+  Serial.println(cmd);
+  Serial.print(F("## ACK="));
+  Serial.println(ack);
+    
   output = F("");
   String temp;
 
-  Serial.println("# " + cmd);
-  WifiSerial::serial.print(cmd);
-  WifiSerial::serial.print(SOFTSERIAL_LINE_ENDING);
+  if (cmd != "") {
+    WifiSerial::serial.print(cmd);
+    WifiSerial::serial.print(SOFTSERIAL_LINE_ENDING);
+  }
 
   char c;
   bool skippedCommandEcho = false;
@@ -106,6 +103,7 @@ bool WifiSerial::SendCommand(String cmd, String ack, String& output) {
   while (millis() < timeout) {
 
     if (WifiSerial::serial.available() > 0) {
+
       c = WifiSerial::serial.read();
       temp += c;
 
@@ -117,7 +115,9 @@ bool WifiSerial::SendCommand(String cmd, String ack, String& output) {
       if (ack != F("") && temp.indexOf(ack) > -1) {
         temp.trim();
         output = temp;
-        Serial.println("ACK!!");
+        
+        Serial.println(output);
+        Serial.println(F("## ACK!!"));
         return true;
       }
     }
@@ -126,8 +126,23 @@ bool WifiSerial::SendCommand(String cmd, String ack, String& output) {
 
   temp.trim();
   output = temp;
+
+  Serial.println(output);
+  Serial.println(F("## TIMEOUT!!"));
+  
   return false;
 
+}
+
+/* Send command 'cmd'. Wait until timeout occurs then set 'output' to
+   the data it received . */
+void WifiSerial::SendCommand(String cmd, String& output) {
+  WifiSerial::SendCommand(cmd, F(""), output);
+}
+
+/* Waits for the acknowledge string 'ack'. */
+void WifiSerial::WaitAckString(String ack, String& output) {
+  WifiSerial::SendCommand(F(""), ack, output);
 }
 
 /* Flushes serial buffer (discards data) */
@@ -178,15 +193,17 @@ bool WifiSerial::DoThingSpeakUpdate() {
   /* Establish TCP connection */
   bool linked;
   do {
-    Serial.println("Establishing connection...");
+    Serial.println(F("## Establishing connection..."));
     linked = WifiSerial::SendCommand(F("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",80"), F("Linked"), output);
   } while (!linked);
 
   /* Enters transmission mode */
   returnValue = WifiSerial::SendCommand(String("") + F("AT+CIPSEND=") + String(request.length()), F(">"), output);
-
+  delay(500);
+  
   /* Sends data */
   returnValue = returnValue && WifiSerial::SendCommand(request, F("SEND OK"), output);
+  delay(500);
 
   /* Closes TCP connection */
   returnValue = returnValue && WifiSerial::SendCommand(F("AT+CIPCLOSE"), F("Unlink"), output);
