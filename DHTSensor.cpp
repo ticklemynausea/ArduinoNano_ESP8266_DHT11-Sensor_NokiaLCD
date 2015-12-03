@@ -11,7 +11,7 @@ float DHTSensor::temperatureValue = 0;
   
 void DHTSensor::Initialize() {
   Display::ShowMessage(F("   #IoT ;-)   "), F("Initializing Sensor"));
-  Serial.println(F("Initializing Sensor..."));
+  Serial.println(F("## Initializing Sensor..."));
   DHTSensor::sensor.begin();
 }
 
