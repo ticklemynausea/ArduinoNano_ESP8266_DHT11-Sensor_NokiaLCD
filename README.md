@@ -4,4 +4,4 @@ An #IoT project using an Arduino Nano, a ESP8266 Serial to Wifi bridge, a DHT11 
 
 I should come up with a better name for this project.
 
-Details at https://blog.ticklemynausea.net/iot-connecting-a-temperature-and-humidity-sensor-to-the-internet/
+Details at https://igotbugs.xyz/iot-connecting-a-temperature-and-humidity-sensor-to-the-internet/
